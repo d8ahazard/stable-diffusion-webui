@@ -114,7 +114,7 @@ class DreamBooth:
                 os.makedirs(self.class_data_dir)
 
         self.logging_dir = os.path.join(self.output_dir, "logging")
-        self.pretrained_model_path = os.path.join(model_dir, "stable-diffusion-v1-4")
+        self.pretrained_model_path = os.path.join(model_path, "dreambooth", "stable-diffusion-v1-4")
         self.with_prior_preservation = False
 
         if class_prompt != "*" and class_prompt != "" and num_class_images != 0:
@@ -580,6 +580,10 @@ def start_training(model_name,
     except:
         pass
 
+    if instance_prompt == "*":
+        print("You didn't configure 'initialization text'! Set it to an expression that'll trigger your embedding.")
+        return "You must configure 'initialization text' first!", ""
+
     if config is None:
         print("Unable to load config?")
         return "Invalid source checkpoint", ""
@@ -622,7 +626,7 @@ def start_training(model_name,
     if not os.path.exists(dream.instance_data_dir):
         print("Invalid training data dir!")
         shared.state.textinfo = "Invalid training data dir"
-        return "", 0
+        return "", ""
 
     shared.state.textinfo = "Initializing dreambooth training..."
     out_dir, trained_steps = dream.train()

@@ -46,6 +46,7 @@ from diffusers import (
 from diffusers.pipelines.latent_diffusion.pipeline_latent_diffusion import LDMBertConfig, LDMBertModel
 from diffusers.pipelines.stable_diffusion import StableDiffusionSafetyChecker
 from transformers import AutoFeatureExtractor, BertTokenizerFast, CLIPTextModel, CLIPTokenizer
+from modules import shared
 
 
 def shave_segments(path, n_shave_prefix_segments=1):
@@ -611,7 +612,7 @@ def extract_checkpoint(new_model_name: str, checkpoint_path: str, scheduler_type
     }
     new_model_dir = create_output_dir(new_model_name, config_data)
     # Create folder for the 'extracted' diffusion model.
-    out_dir = os.path.join(new_model_dir, "stable-diffusion-v1-4")
+    out_dir = os.path.join(paths.models_path, "dreambooth", "stable-diffusion-v1-4")
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
@@ -670,8 +671,13 @@ def extract_checkpoint(new_model_name: str, checkpoint_path: str, scheduler_type
     if text_model_type == "FrozenCLIPEmbedder":
         text_model = convert_ldm_clip_checkpoint(checkpoint)
         tokenizer = CLIPTokenizer.from_pretrained("openai/clip-vit-large-patch14")
-        safety_checker = StableDiffusionSafetyChecker.from_pretrained("CompVis/stable-diffusion-safety-checker")
         feature_extractor = AutoFeatureExtractor.from_pretrained("CompVis/stable-diffusion-safety-checker")
+        if shared.opts.filter_nsfw:
+            safety_checker = StableDiffusionSafetyChecker.from_pretrained("CompVis/stable-diffusion-safety-checker")
+        else:
+            def allow_nsfw(images, **kwargs): return images, False
+            safety_checker = allow_nsfw
+
         pipe = StableDiffusionPipeline(
             vae=vae,
             text_encoder=text_model,
@@ -690,6 +696,7 @@ def extract_checkpoint(new_model_name: str, checkpoint_path: str, scheduler_type
     if os.path.isfile(original_config_file):
         os.remove(original_config_file)
     dirs = dreambooth.get_db_models()
+    print(f"Created {new_model_name}! Ready to train.")
     return gr.Dropdown.update(choices=sorted(dirs)), f"Created: {new_model_name}", ""
 
 
