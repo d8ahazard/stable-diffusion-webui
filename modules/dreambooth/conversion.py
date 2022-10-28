@@ -594,7 +594,10 @@ def convert_ldm_clip_checkpoint(checkpoint):
 
     for key in keys:
         if key.startswith("cond_stage_model.transformer"):
-            text_model_dict[key[len("cond_stage_model.transformer."):]] = checkpoint[key]
+            new_key = key.removeprefix("cond_stage_model.transformer.")
+            if not new_key.startswith("text_model."):
+                new_key = f"text_model.{new_key}"
+            text_model_dict[new_key] = checkpoint[key]
 
     text_model.load_state_dict(text_model_dict)
 
@@ -612,19 +615,25 @@ def extract_checkpoint(new_model_name: str, checkpoint_path: str, scheduler_type
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    # Todo: What impact does using the 'og' model config if not using that model as our base?
-    original_config_file = load_file_from_url("https://raw.githubusercontent.com/CompVis/stable-diffusion/main"
-                                              "/configs/stable-diffusion/v1-inference.yaml", new_model_dir
-                                              )
-
-    original_config = OmegaConf.load(original_config_file)
     # Is this right?
-    checkpoint_file = modules.sd_models.get_closet_checkpoint_match(checkpoint_path)
-    if checkpoint_file is None or not os.path.exists(checkpoint_file[0]):
+    checkpoint_info = modules.sd_models.get_closet_checkpoint_match(checkpoint_path)
+    if checkpoint_info is None or not os.path.exists(checkpoint_info.filename):
         print("Unable to find checkpoint file!")
         return None, "Unable to find base checkpoint.", ""
-    checkpoint = torch.load(checkpoint_file[0])["state_dict"]
-    print(f"Checkpoint loaded from {checkpoint_file}")
+    checkpoint = torch.load(checkpoint_info.filename)["state_dict"]
+    print(f"Checkpoint loaded from {checkpoint_info}")
+
+    if os.path.exists(checkpoint_info.config):
+        original_config = OmegaConf.load(checkpoint_info.config)
+        print(f"Loaded checkpoint config from {checkpoint_info.config}")
+    else:
+        # Todo: What impact does using the 'og' model config if not using that model as our base?
+        original_config_file = load_file_from_url("https://raw.githubusercontent.com/CompVis/stable-diffusion/main"
+                                                  "/configs/stable-diffusion/v1-inference.yaml",
+                                                  new_model_dir)
+        original_config = OmegaConf.load(original_config_file)
+        os.remove(original_config_file)
+
     num_train_timesteps = original_config.model.params.timesteps
     beta_start = original_config.model.params.linear_start
     beta_end = original_config.model.params.linear_end
@@ -683,10 +692,10 @@ def extract_checkpoint(new_model_name: str, checkpoint_path: str, scheduler_type
         text_model = convert_ldm_bert_checkpoint(checkpoint, text_config)
         tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
         pipe = LDMTextToImagePipeline(vqvae=vae, bert=text_model, tokenizer=tokenizer, unet=unet, scheduler=scheduler)
+
     pipe.save_pretrained(out_dir)
-    if os.path.isfile(original_config_file):
-        os.remove(original_config_file)
     dirs = dreambooth.get_db_models()
+    print(f"Created {new_model_name}! Ready to train.")
     return gr.Dropdown.update(choices=sorted(dirs)), f"Created: {new_model_name}", ""
 
 
