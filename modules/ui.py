@@ -35,7 +35,8 @@ from modules.sd_hijack import model_hijack
 from modules.sd_samplers import samplers, samplers_for_img2img
 from modules.shared import opts, cmd_opts
 
-# this is a fix for Windows users. Without it, javascript files will be served with text/html content-type and the browser will not show any UI
+# this is a fix for Windows users. Without it, javascript files will be served with text/html content-type and the
+# browser will not show any UI
 mimetypes.init()
 mimetypes.add_type('application/javascript', '.js')
 

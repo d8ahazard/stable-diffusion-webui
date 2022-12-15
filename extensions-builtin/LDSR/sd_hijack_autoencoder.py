@@ -250,7 +250,8 @@ class VQModel(pl.LightningModule):
         if plot_ema:
             with self.ema_scope():
                 xrec_ema, _ = self(x)
-                if x.shape[1] > 3: xrec_ema = self.to_rgb(xrec_ema)
+                if x.shape[1] > 3:
+                    xrec_ema = self.to_rgb(xrec_ema)
                 log["reconstructions_ema"] = xrec_ema
         return log
 

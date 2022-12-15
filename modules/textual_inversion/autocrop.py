@@ -53,9 +53,7 @@ def crop_image(im, settings):
 
     crop = [x1, y1, x2, y2]
 
-    results = []
-
-    results.append(im.crop(tuple(crop)))
+    results = [im.crop(tuple(crop))]
 
     if settings.annotate_image:
         d = ImageDraw.Draw(im_debug)
@@ -243,7 +241,7 @@ def image_entropy_points(im, settings):
         crop = im.crop(tuple(crop_current))
         e = image_entropy(crop)
 
-        if (e > e_max):
+        if e > e_max:
             e_max = e
             crop_best = list(crop_current)
 
