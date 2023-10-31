@@ -38,6 +38,7 @@ cache
 /*.txt
 /*.mp3
 /*.lnk
+.idea/
 !webui.bat
 !webui.sh
 !package.json
