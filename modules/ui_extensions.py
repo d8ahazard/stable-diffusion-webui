@@ -318,7 +318,10 @@ def create_html(search_text, sort_column):
     stats = { 'processed': 0, 'enabled': 0, 'hidden': 0, 'installed': 0 }
     for ext in sorted(extensions_list, key=sort_function, reverse=sort_reverse):
         installed = get_installed(ext)
-        author = f"Author: {ext['url'].split('/')[3]}" if 'github' in ext['url'] else ''
+        author = ''
+        if 'github' in ext['url']:
+            ext_parts = ext['url'].split('/')
+            author = f"Author: {ext_parts[3] if len(ext_parts) > 3 else ''}"
         try:
             updated = datetime.timestamp(datetime.fromisoformat(ext.get('updated', '2000-01-01T00:00:00.000Z').rstrip('Z')))
         except Exception:
